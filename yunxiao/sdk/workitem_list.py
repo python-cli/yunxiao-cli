@@ -1,0 +1,65 @@
+import os
+
+from typing import List, Dict
+from json import dumps
+
+from .base import *
+from .category import Category
+from ..model import WorkItem
+
+class API(APIBase):
+
+    @staticmethod
+    def create_api_info(
+        organization_id: str,
+    ) -> open_api_models.Params:
+        """
+        API 相关
+        @param path: string Path parameters
+        @return: OpenApi.Params
+        """
+        params = open_api_models.Params(
+            # 接口名称,
+            action='ListWorkitems',
+            # 接口版本,
+            version='2021-06-25',
+            # 接口协议,
+            protocol='HTTPS',
+            # 接口 HTTP 方法,
+            method='GET',
+            auth_type='AK',
+            style='ROA',
+            # 接口 PATH,
+            pathname=f'/organization/{organization_id}/listWorkitems',
+            # 接口请求体内容格式,
+            req_body_type='json',
+            # 接口响应体内容格式,
+            body_type='json'
+        )
+        return params
+
+    @staticmethod
+    def run(
+        organization: str,
+        project: str,
+        category: Category,
+        condition: Dict | None = None,
+    ) -> List[WorkItem]:
+        client = API.create_client()
+        params = API.create_api_info(organization)
+        # query params
+        queries = {}
+        queries['spaceType'] = 'Project'
+        queries['spaceIdentifier'] = project
+        queries['category'] = category.value
+        queries['conditions'] = dumps(condition) if condition else None
+        # runtime options
+        runtime = util_models.RuntimeOptions()
+        request = open_api_models.OpenApiRequest(
+            query=OpenApiUtilClient.query(queries)
+        )
+        # 复制代码运行请自行打印 API 的返回值
+        # 返回值实际为 Map 类型，可从 Map 中获得三类数据：响应体 body、响应头 headers、HTTP 返回的状态码 statusCode。
+        dict = client.call_api(params, request, runtime)
+        data = dict.get('body', {}).get('workitems') or []
+        return [WorkItem(**d) for d in data]

@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+alibabacloud-tea-openapi = "*"
+dotenv = "*"
+requests = "*"
+alibabacloud-devops20210625 = "*"
+rich = "*"
+click = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
