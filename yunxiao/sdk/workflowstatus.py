@@ -1,10 +1,3 @@
-import os
-from typing import List
-
-from alibabacloud_tea_openapi.client import Client as OpenApiClient
-from alibabacloud_tea_openapi import models as open_api_models
-from alibabacloud_tea_util import models as util_models
-
 from .base import *
 from ..model import Status
 from .category import Category
@@ -44,20 +37,24 @@ class API(APIBase):
     def run(
         organization: str,
         project: str,
-        category: Category,
-    ) -> None:
+        category: str,
+    ) -> List[Status]:
         client = API.create_client()
         params = API.create_api_info(organization)
         # query params
         queries = {}
         queries['spaceType'] = 'Project'
-        queries['workitemCategoryIdentifier'] = category.value
+        queries['workitemCategoryIdentifier'] = category
         queries['spaceIdentifier'] = project
         # runtime options
         runtime = util_models.RuntimeOptions()
         request = open_api_models.OpenApiRequest(
             query=OpenApiUtilClient.query(queries)
         )
-        dict = client.call_api(params, request, runtime)
-        data = dict.get('body', {}).get('statuses') or []
-        return [Status(**d) for d in data]
+
+        try:
+            dict = client.call_api(params, request, runtime)
+            data = dict.get('body', {}).get('statuses') or []
+            return [Status(**d) for d in data]
+        except Exception as e:
+            return []

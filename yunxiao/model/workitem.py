@@ -25,3 +25,7 @@ class WorkItem(ModelBase):
         'workitemTypeIdentifier': 'ffffffff'
       }
     '''
+
+    @property
+    def web_url(self):
+        return f'https://devops.aliyun.com/projex/project/{self.spaceIdentifier}/{self.categoryIdentifier.lower()}/{self.identifier}'

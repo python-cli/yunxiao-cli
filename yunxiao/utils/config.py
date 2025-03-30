@@ -4,7 +4,7 @@ from typing import Tuple, List, Dict, Optional, Any, Union
 import yaml
 from textwrap import dedent
 
-# from .plugin import DoPlugin, ListPlugin, InfoPlugin
+from ..model import Project
 
 _root = expanduser('~/.config/yunxiao-cli')
 exists(_root) or makedirs(_root, exist_ok=True)  # type: ignore[func-returns-value]
@@ -24,12 +24,19 @@ def _load_config() -> dict:
         # https://help.aliyun.com/zh/ram/user-guide/create-an-accesskey-pair
         CREDENTIAL:
             access_key_id: 
-            access_key_secret: 
+            access_key_secret:
+
+            # Open page https://myaccount.console.aliyun.com/overview and copy the value of "账号ID"
+            aliyun_account_id:
 
         TEAM:
             endpoint: devops.cn-hangzhou.aliyuncs.com
             organization: 
-            project: 
+
+            # Following projects
+            projects:
+                - id: 
+                  name: 
         ''')
 
         with open(_config_file, 'w') as file:
@@ -52,11 +59,20 @@ def get_credential() -> Tuple[str, str]:
 
     return access_key_id, access_key_secret
 
-def get_organization() -> str:
-    return _load_config().get('TEAM', {}).get('organization')
+def get_aliyun_account_id() -> str:
+    return _load_config().get('CREDENTIAL', {}).get('aliyun_account_id')
 
-def get_project() -> str:
-    return _load_config().get('TEAM', {}).get('project')
+def get_prefer_organization() -> str:
+    return _load_config().get('TEAM', {}).get('organization')
 
 def get_endpoint() -> str:
     return _load_config().get('TEAM', {}).get('endpoint')
+
+def get_following_projects() -> List[Project]:
+    data = [{
+        'customCode': '',
+        'identifier': x.get('id'),
+        'name': x.get('name'),
+    } for x in _load_config().get('TEAM', {}).get('projects')]
+
+    return [Project(**x) for x in data]

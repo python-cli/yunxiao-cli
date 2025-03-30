@@ -1,11 +1,10 @@
 from aliyunsdkcore.client import AcsClient
-from alibabacloud_tea_openapi import models as open_api_models
 from aliyunsdksts.request.v20150401 import GetCallerIdentityRequest
 from json import loads
 
 from ..utils.config import *
 
-def get_user_id():
+def fetch_user_id():
     '''
     Return current user's aliyun account ID.
     '''

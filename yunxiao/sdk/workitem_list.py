@@ -1,8 +1,3 @@
-import os
-
-from typing import List, Dict
-from json import dumps
-
 from .base import *
 from .category import Category
 from ..model import WorkItem
@@ -42,7 +37,7 @@ class API(APIBase):
     def run(
         organization: str,
         project: str,
-        category: Category,
+        category: str,
         condition: Dict | None = None,
     ) -> List[WorkItem]:
         client = API.create_client()
@@ -51,7 +46,7 @@ class API(APIBase):
         queries = {}
         queries['spaceType'] = 'Project'
         queries['spaceIdentifier'] = project
-        queries['category'] = category.value
+        queries['category'] = category
         queries['conditions'] = dumps(condition) if condition else None
         # runtime options
         runtime = util_models.RuntimeOptions()

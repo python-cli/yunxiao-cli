@@ -14,3 +14,8 @@ class Status(ModelBase):
       "resourceType": "Workitem"
     }
     '''
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Status):
+            return False
+        return self.identifier == other.identifier

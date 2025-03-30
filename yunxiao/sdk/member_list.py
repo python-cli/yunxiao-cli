@@ -1,14 +1,3 @@
-# -*- coding: utf-8 -*-
-# This file is auto-generated, don't edit it. Thanks.
-import os
-
-from typing import List
-
-from alibabacloud_tea_openapi.client import Client as OpenApiClient
-from alibabacloud_tea_openapi import models as open_api_models
-from alibabacloud_tea_util import models as util_models
-from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
-
 from .base import *
 from ..model import Member
 from ..utils.config import *

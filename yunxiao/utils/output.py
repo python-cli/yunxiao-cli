@@ -1,13 +1,15 @@
 from rich.table import Table
 from rich.console import Console
+from rich.text import Text
+from rich.style import Style
 
 from typing import Iterable, Union, Dict, Sequence, Any
 
 from ..model import Organization, Project, Status, Member, WorkItem
 
-def _show_table(table_data: Iterable[Any], headers=None):
+def _show_table(table_data: Iterable[Any], headers=None, title=None):
     console = Console()
-    table = Table()
+    table = Table(title=title)
     
     # Add headers
     if headers:
@@ -16,7 +18,7 @@ def _show_table(table_data: Iterable[Any], headers=None):
     
     # Add rows
     for row in table_data:
-        table.add_row(*[str(cell) for cell in row])
+        table.add_row(*[cell if isinstance(cell, Text) else str(cell) for cell in row])
     
     console.print(table)
 
@@ -60,7 +62,18 @@ def show_table_workitem(items: Iterable[WorkItem]):
     '''
     Print work items with Rich table.
     '''
+    def add_link(text, url):
+        txt = Text()
+        txt.append(text, style=Style(color="green", link=url))
+        return txt
 
-    table = list(map(lambda x: [x.serialNumber, x.subject, x.assignedTo, x.status, x.updateStatusAt], items))
-    headers = ['NO.', 'Title', 'Assigned To', 'Status', 'Last Modified']
+    table = list(map(lambda x: [add_link(x.serialNumber, x.web_url), x.subject, x.assignedTo, x.status], items))
+    headers = ['NO.', 'Title', 'Assigned To', 'Status']
     _show_table(table, headers=headers)
+
+def show_content(title: str, content: str):
+    console = Console()
+    text = Text()
+    text.append(title)
+    text.append(content, style="bold italic")
+    console.print(text)

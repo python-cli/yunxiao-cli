@@ -8,6 +8,7 @@ yunxiao-cli = {file = ".", editable = true}
 pyyaml = "*"
 aliyun-python-sdk-sts = "*"
 aliyunsdkcore = "*"
+click = "*"
 
 [dev-packages]
 
