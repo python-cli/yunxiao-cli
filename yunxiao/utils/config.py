@@ -6,11 +6,15 @@ from textwrap import dedent
 
 from ..model import Project
 
-_root = expanduser('~/.config/yunxiao-cli')
-exists(_root) or makedirs(_root, exist_ok=True)  # type: ignore[func-returns-value]
-
 _config = None
-_config_file = join(_root, 'config.yaml')
+
+def get_config_root() -> str:
+    _root = expanduser('~/.config/yunxiao-cli')
+    exists(_root) or makedirs(_root, exist_ok=True)  # type: ignore[func-returns-value]
+    return _root
+
+def _get_config_file() -> str:
+    return join(get_config_root(), 'config.yaml')
 
 def _load_config() -> dict:
     global _config
@@ -18,7 +22,9 @@ def _load_config() -> dict:
     if _config is not None:
         return _config
 
-    if not exists(_config_file):
+    config_file = _get_config_file()
+
+    if not exists(config_file):
         content = dedent('''
         # User Credential
         # https://help.aliyun.com/zh/ram/user-guide/create-an-accesskey-pair
@@ -37,20 +43,23 @@ def _load_config() -> dict:
             projects:
                 - id: 
                   name: 
+
+            # Custom workflow Statuses
+            statuses:
+                - doing
+                    - name: 待处理
+                    - name: 开发中
         ''')
 
-        with open(_config_file, 'w') as file:
+        with open(config_file, 'w') as file:
             file.write(content)
         
-        chmod(_config_file, 0o600)  # u=rw,g=,o=
+        chmod(config_file, 0o600)  # u=rw,g=,o=
 
-    with open(_config_file) as file:
+    with open(config_file) as file:
         _config = yaml.load(file, Loader=yaml.FullLoader)
 
     return _config
-
-def get_config_file() -> str:
-    return _config_file
 
 def get_credential() -> Tuple[str, str]:
     config = _load_config()
@@ -76,3 +85,6 @@ def get_following_projects() -> List[Project]:
     } for x in _load_config().get('TEAM', {}).get('projects')]
 
     return [Project(**x) for x in data]
+
+def get_custom_workflow_statuses() -> List[Dict]:
+    pass

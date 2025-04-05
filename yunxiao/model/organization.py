@@ -5,7 +5,7 @@ class Organization(ModelBase):
     '''
     {
       "isOrgAdmin": false,
-      "name": "XXX公司", 
+      "name": "XXX公司",
       "id": "ffffffff"
     }
     '''

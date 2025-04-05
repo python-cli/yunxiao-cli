@@ -22,7 +22,21 @@ class WorkItem(ModelBase):
         'statusStageIdentifier': '12',
         'subject': 'Setup environment',
         'updateStatusAt': 1742377068000,
-        'workitemTypeIdentifier': 'ffffffff'
+        'workitemTypeIdentifier': 'ffffffff',
+        'customFields': [
+          {
+            'fieldClassName': 'option',
+            'fieldFormat': 'list',
+            'fieldIdentifier': 'priority',
+            'value': 'xxxxxxxx',
+            'valueList': [{'displayValue': '中',
+                          'identifier': 'xxxxxxxx',
+                          'level': 4,
+                          'value': '中',
+                          'valueEn': 'Medium'}],
+            'workitemIdentifier': 'xxxxxxxx'}]
+          }
+        ]
       }
     '''
 

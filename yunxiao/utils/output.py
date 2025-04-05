@@ -66,10 +66,67 @@ def show_table_workitem(items: Iterable[WorkItem]):
         txt = Text()
         txt.append(text, style=Style(color="green", link=url))
         return txt
+    
+    def get_username(user):
+        from ..main import GlobalState
+        return GlobalState.current().get_matching_member_name(user)
 
-    table = list(map(lambda x: [add_link(x.serialNumber, x.web_url), x.subject, x.assignedTo, x.status], items))
+    table = list(map(lambda x: [add_link(x.serialNumber, x.web_url), x.subject, get_username(x.assignedTo), x.status], items))
     headers = ['NO.', 'Title', 'Assigned To', 'Status']
     _show_table(table, headers=headers)
+
+def show_panel_workitem(item: WorkItem):
+    '''
+    Print work items with Rich table.
+    '''
+    from ..main import GlobalState
+
+    def add_link(text, url):
+        txt = Text()
+        txt.append(text, style=Style(color="green", link=url))
+        return txt
+    
+    def get_username(user):
+        from ..main import GlobalState
+        return GlobalState.current().get_matching_member_name(user)
+
+    def format_timestamp(value):
+        from datetime import datetime, timezone
+        return datetime.fromtimestamp(value / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
+    def print_property(title, content):
+        console = Console()
+        text = Text()
+        text.append(title)
+        text.append(': ')
+
+        if isinstance(content, Text):
+            text.append(content)
+        else:
+            text.append(content, style="bold italic")
+
+        console.print(text)
+
+    print_property('ID', add_link(item.serialNumber, item.web_url))
+    print_property('Subject', item.subject)
+    print_property('Project', item.spaceName)
+    print_property('Category', item.categoryIdentifier)
+    print_property('Assigned To', get_username(item.assignedTo))
+    print_property('Status', item.status)
+    print_property('Update Status At', format_timestamp(item.updateStatusAt))
+    print_property('Creator', get_username(item.creator))
+    print_property('Created At', format_timestamp(item.gmtCreate))
+    print_property('Modifier', get_username(item.modifier))
+    print_property('Modified At', format_timestamp(item.gmtModified))
+    print_property('Finish Time', format_timestamp(item.finishTime))
+
+    project_id = item.spaceIdentifier
+    category = item.categoryIdentifier
+
+    for field in item.customFields:
+        field_name = GlobalState.current().get_matching_field_name(project_id, category, field.get('fieldIdentifier'))
+        field_value = field.get('valueList', [])[0].get('displayValue')
+        print_property(field_name, field_value)
 
 def show_content(title: str, content: str):
     console = Console()

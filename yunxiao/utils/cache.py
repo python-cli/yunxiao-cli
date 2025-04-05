@@ -1,16 +1,11 @@
-from os import makedirs
-from os.path import join, exists, expanduser
+from os.path import join
 from typing import Tuple, List, Dict, Optional, Any, Union
 import yaml
 from yaml import Dumper, Loader
 
 from ..sdk import OrganizationListAPI, ProjectListAPI
 from ..model import ModelBase, Organization, Project, Member, Status
-from .config import get_prefer_organization
-
-_root = expanduser('~/.config/yunxiao-cli')
-_cache_file = join(_root, 'cache.yaml')
-_cache: List[Organization] = None
+from .config import get_config_root, get_prefer_organization
 
 def _setup_yaml_handlers():
     # Serialization: Convert ModelBase objects to YAML
@@ -34,29 +29,29 @@ def _setup_yaml_handlers():
 
 _setup_yaml_handlers()
 
+def _get_config_file() -> str:
+    return join(get_config_root(), 'cache.yaml')
+
 def _save_to_cache(data: ModelBase) -> None:
     """Save a ModelBase object hierarchy to YAML."""
-    with open(_cache_file, 'w') as f:
+    with open(_get_config_file(), 'w') as f:
         yaml.dump(data, f, sort_keys=False)
 
 def _load_from_cache() -> ModelBase:
     """Load a ModelBase object hierarchy from YAML."""
-    with open(_cache_file, 'r') as f:
+    with open(_get_config_file(), 'r') as f:
         return yaml.load(f, Loader=Loader)
 
 def get_cached_organization(fetch: bool = False) -> Optional[Organization]:
-    global _cache
     orgs = _load_from_cache()
 
     if fetch and not orgs:
         orgs = OrganizationListAPI.run()
         _save_to_cache(orgs)
-        _cache = orgs
 
         if not orgs:
             return None
 
-    _cache = orgs
     prefer_org_id = get_prefer_organization()
 
     if prefer_org_id:
@@ -67,29 +62,14 @@ def get_cached_organization(fetch: bool = False) -> Optional[Organization]:
 
     return next((org for org in orgs if org.default == True), orgs[0])
 
-def save_new_organizations(new_orgs: List[Organization]):
-    global _cache
-    orgs = _load_from_cache()
+def save_cached_organization(org: Organization):
+    all_orgs = _load_from_cache()
 
-    if orgs:
-        for org in new_orgs:
-            if org not in orgs:
-                orgs.append(org)
+    if all_orgs:
+        # Filter out any existing org with same ID, then add the new one
+        all_orgs = list(filter(lambda x: x != org, all_orgs))
+        all_orgs.append(org)
 
-        _save_to_cache(orgs)
-        _cache = orgs
+        _save_to_cache(all_orgs)
     else:
-        _save_to_cache(new_orgs)
-        _cache = new_orgs
-
-def get_cached_projects(fetch: bool = False) -> Optional[List[Project]]:
-    org = get_cached_organization(fetch)
-
-    if not org:
-        return None
-
-    return org.projects
-
-def synchronize_cache():
-    if _cache is not None:
-        _save_to_cache(_cache)
+        _save_to_cache([org])

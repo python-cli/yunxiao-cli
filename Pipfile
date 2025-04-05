@@ -9,6 +9,9 @@ pyyaml = "*"
 aliyun-python-sdk-sts = "*"
 aliyunsdkcore = "*"
 click = "*"
+selenium = "*"
+webdriver-manager = "*"
+rich = "*"
 
 [dev-packages]
 
