@@ -3,11 +3,11 @@ from rich.console import Console
 from rich.text import Text
 from rich.style import Style
 
-from typing import Iterable, Union, Dict, Sequence, Any
+from typing import Iterable, Optional, List, Union, Dict, Sequence, Any
 
 from ..model import Organization, Project, Status, Member, WorkItem
 
-def _show_table(table_data: Iterable[Any], headers=None, title=None):
+def _show_table(table_data: Iterable[Any], headers: Optional[List[str]], title: Optional[str] = None):
     console = Console()
     table = Table(title=title)
     
@@ -21,6 +21,12 @@ def _show_table(table_data: Iterable[Any], headers=None, title=None):
         table.add_row(*[cell if isinstance(cell, Text) else str(cell) for cell in row])
     
     console.print(table)
+
+def show_table_generic(items: Iterable[Iterable[Any]], headers=List[str]):
+    '''
+    Print generic iterable items with Rich table.
+    '''
+    _show_table(items, headers=headers)
 
 def show_table_organization(items: Iterable[Organization]):
     '''
@@ -125,7 +131,7 @@ def show_panel_workitem(item: WorkItem):
 
     for field in item.customFields:
         field_name = GlobalState.current().get_matching_field_name(project_id, category, field.get('fieldIdentifier'))
-        field_value = field.get('valueList', [])[0].get('displayValue')
+        field_value = item.get_display_value_of_custom_field(field.get('fieldIdentifier'))
         print_property(field_name, field_value)
 
 def show_content(title: str, content: str):

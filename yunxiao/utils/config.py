@@ -5,6 +5,7 @@ import yaml
 from textwrap import dedent
 
 from ..model import Project
+from .command import CommandCenter, CommandBase
 
 _config = None
 
@@ -43,12 +44,9 @@ def _load_config() -> dict:
             projects:
                 - id: 
                   name: 
-
-            # Custom workflow Statuses
-            statuses:
-                - doing
-                    - name: 待处理
-                    - name: 开发中
+      
+        COMMAND:
+            - # /path/to/code.py
         ''')
 
         with open(config_file, 'w') as file:
@@ -86,5 +84,10 @@ def get_following_projects() -> List[Project]:
 
     return [Project(**x) for x in data]
 
-def get_custom_workflow_statuses() -> List[Dict]:
-    pass
+def get_user_commands() -> List[CommandBase.__subclasses__]:
+    result = []
+    for path in _load_config().get('COMMAND', []):
+        cmd_cls = CommandCenter.register(path)
+        if cmd_cls:
+            result.append(cmd_cls)
+    return result

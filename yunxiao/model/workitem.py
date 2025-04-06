@@ -43,3 +43,11 @@ class WorkItem(ModelBase):
     @property
     def web_url(self):
         return f'https://devops.aliyun.com/projex/project/{self.spaceIdentifier}/{self.categoryIdentifier.lower()}/{self.identifier}'
+
+    def get_display_value_of_custom_field(self, field_id: str) -> Optional[str]:
+        """
+        Retrieves the value of a custom field by its identifier.
+        """
+        for field in self.customFields:
+            if field['fieldIdentifier'] == field_id:
+                return field.get('valueList', [])[0].get('displayValue')

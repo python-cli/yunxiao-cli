@@ -17,11 +17,23 @@ class Condition:
         })
 
     @classmethod
-    def status(cls, value: Union[str, List[str]]) -> 'Condition':
+    def status_contains(cls, value: Union[str, List[str]]) -> 'Condition':
         """Initialize a condition for status field"""
         return cls({
             "fieldIdentifier": "status",
             "operator": "CONTAINS",
+            "value": [value] if isinstance(value, str) else value,
+            "toValue": None,
+            "className": "status",
+            "format": "list"
+        })
+
+    @classmethod
+    def status_not_contains(cls, value: Union[str, List[str]]) -> 'Condition':
+        """Initialize a condition for status field"""
+        return cls({
+            "fieldIdentifier": "status",
+            "operator": "NOT_CONTAINS",
             "value": [value] if isinstance(value, str) else value,
             "toValue": None,
             "className": "status",
