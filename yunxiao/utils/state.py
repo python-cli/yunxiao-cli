@@ -45,7 +45,7 @@ class GlobalState:
         '''Save the working organization's changes to local cache.'''
         save_cached_organization(self.organization)
 
-    def get_all_projects(self, reload: bool = False) -> List[Project]:
+    def get_all_projects(self, reload: bool = False, reload_project_set: bool = False) -> List[Project]:
         '''Get all the projects under the working organization.'''
         all_projects = self.organization.projects
 
@@ -58,10 +58,11 @@ class GlobalState:
                 if p not in all_projects:
                     all_projects.append(p)
 
-            # Fetch from the user's project sets
-            for p in self.get_all_projects_by_web():
-                if p not in all_projects:
-                    all_projects.append(p)
+            if reload_project_set:
+                # Fetch from the user's project sets
+                for p in self.get_all_projects_by_web():
+                    if p not in all_projects:
+                        all_projects.append(p)
 
             i, total = 1, len(all_projects)
             result_projects = []
@@ -115,8 +116,10 @@ class GlobalState:
                     return
             else:
                 click.echo(f'Login ticket may get expired: {ticket}')
+                ticket = None
 
         if ticket is None:
+            click.echo('Opening chrome browser to get a access ticket of aliyun...')
             ticket = request_aliyun_login_ticket()
 
             if ticket:
@@ -126,12 +129,16 @@ class GlobalState:
             return
         
         all_projects = []
+        all_project_sets = fetch_project_sets(ticket) or []
 
-        for projectset in fetch_project_sets(ticket):
-            id = projectset.get('identifier')
-            name = projectset.get('name')
-            click.echo(f'Fetching project set {name} ({id})')
-            all_projects.extend(fetch_projects(id, ticket))
+        if len(all_project_sets) > 0:
+            for projectset in all_project_sets:
+                id = projectset.get('identifier')
+                name = projectset.get('name')
+                click.echo(f'Fetching project set {name} ({id})')
+                all_projects.extend(fetch_projects(id, ticket))
+        else:
+            click.echo('No project set found')
         
         return all_projects
 

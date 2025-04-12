@@ -36,20 +36,21 @@ def project(ctx):
 
 @project.command(name='list')
 def project_list_builtin():
-    """List the builtin projects"""
+    """List the cached projects"""
     projects = ProjectListAPI.run(GlobalState.current().organization_id)
     show_table_project(projects)
 
 @project.command(name='all')
 @click.option('--reload', '-r', is_flag=True, default=False, help='Force reload the following projects or not.')
-def project_list_all(reload):
-    """List the builtin and following projects."""
-    projects = GlobalState.current().get_all_projects(reload)
+@click.option('--reload-project-set', '-s', is_flag=True, default=False, help='Force reload the online project sets or not.')
+def project_list_all(reload, reload_project_set):
+    """List/Reload the builtin and following projects"""
+    projects = GlobalState.current().get_all_projects(reload, reload_project_set)
     show_table_project(projects)
 
 @project.command(name='field')
 def project_fields_all():
-    """List the builtin and following projects."""
+    """List all the projects' field"""
     for project in GlobalState.current().get_all_projects():
         click.echo(f'Project: {project.name}')
         for category, workitemtypes in project.workitemtypes.items():
@@ -65,7 +66,7 @@ def project_fields_all():
 @project.command(name='info')
 @click.argument('id', type=click.STRING, required=True)
 def workitem_info(id):
-    """Get project details"""
+    """Get workitem details"""
     project = ProjectDetailAPI.run(GlobalState.current().organization_id, id)
     show_table_project([project])
 
@@ -73,7 +74,7 @@ def workitem_info(id):
 @click.option('--project', type=click.STRING, help='Project ID')
 @click.option('--category', type=click.Choice([c.value for c in Category]), required=True, help='Category name')
 def project_status(project, category):
-    """List the project's statuses."""
+    """List the project's statuses"""
     if project:
         all_projects = [ProjectDetailAPI.run(GlobalState.current().organization_id, project)]
     else: 
@@ -147,7 +148,7 @@ def workitem_info(id):
 
     show_panel_workitem(workitem)
 
-@cli.command(name='test')
+@cli.command(name='test', hidden=True)
 def test_entry():
     """Test"""
     pass

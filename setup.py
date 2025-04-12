@@ -22,11 +22,17 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=[
+        "alibabacloud-tea",
         "alibabacloud-tea-openapi",
-        "requests",
-        "alibabacloud-devops20210625",
-        "rich",
+        "aliyun-python-sdk-core",
+        "aliyun-python-sdk-sts",
+        "aliyunsdkcore",
         "click",
+        "PyYAML",
+        "requests",
+        "rich",
+        "selenium",
+        "webdriver-manager",
     ],
     entry_points={
         "console_scripts": [
