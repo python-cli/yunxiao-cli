@@ -148,6 +148,86 @@ def workitem_info(id):
 
     show_panel_workitem(workitem)
 
+@cli.group(invoke_without_command=True, name='repo')
+@click.pass_context
+def repository(ctx):
+    """Repository management commands"""
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(repository_list)
+
+@repository.command(name='list')
+@click.option('--path', type=click.STRING, help='Repo path')
+@click.option('--reload', '-r', is_flag=True, default=False, help='Force reload the repositories or not.')
+def repository_list(path, reload):
+    """List repository"""
+
+    show_table_repository(GlobalState.current().get_all_repositories(reload))
+
+@repository.command(name='branch')
+@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
+def repository_branch_list(repo_name):
+    """List repository branches."""
+
+    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
+
+    if not repo:
+        click.echo(f'Repository not found: {repo_name}')
+        return
+
+    branches = BranchListAPI.run(GlobalState.current().organization_id, repo.Id)
+    show_table_branch(branches)
+
+@cli.group(name='pr')
+def merge_request():
+    """Merge request management commands"""
+    pass
+
+@merge_request.command(name='list')
+@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
+def merge_request_list(repo_name):
+    """List merge requests."""
+
+    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
+
+    if not repo:
+        click.echo(f'Repository not found: {repo_name}')
+        return
+
+    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo.Id, GlobalState.current().user_id)
+    show_table_merge_request(requests)
+
+@merge_request.command(name='info')
+@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
+@click.option('--id', '-i', type=click.STRING, required=True, help='Identifier')
+def merge_request_list(repo_name, id):
+    """Show the details of merge request."""
+
+    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
+
+    if not repo:
+        click.echo(f'Repository not found: {repo_name}')
+        return
+
+    request = MergeRequestDetailAPI.run(GlobalState.current().organization_id, repo.Id, id)
+    show_panel_merge_request(request)
+
+@merge_request.command(name='create')
+@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
+@click.option('--source-branch', type=click.STRING, required=True, help='Source branch')
+@click.option('--target-branch', type=click.STRING, required=True, help='Target branch')
+@click.option('--title', type=click.STRING, required=True, help='Title')
+def merge_request_create(repo_name, source_branch, target_branch, title):
+    """Create merge request."""
+
+    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
+
+    if not repo:
+        click.echo(f'Repository not found: {repo_name}')
+        return
+
+    result = MergeRequestCreateAPI.run(GlobalState.current().organization_id, repo.Id, source_branch, target_branch, title)
+    print(result)
+
 @cli.command(name='test', hidden=True)
 def test_entry():
     """Test"""

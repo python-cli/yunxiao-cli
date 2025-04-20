@@ -7,6 +7,9 @@ class ModelBase(ABC):
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def get(self, key: str, default: Any = None) -> Any:
+        return getattr(self, key, default)
+
     def _format_value(self, value: Any, indent: int = 0) -> str:
         if isinstance(value, dict):
             items = []

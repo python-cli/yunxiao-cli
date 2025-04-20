@@ -6,6 +6,7 @@ from ..sdk import *
 from .config import *
 from .cache import *
 from ..web import *
+from ..model.repository import Repository
 
 @dataclass
 class GlobalState:
@@ -213,6 +214,30 @@ class GlobalState:
                             return field.identifier
         
         return None
+
+    def get_all_repositories(self, reload: bool = False) -> List[Repository]:
+        '''Get all the repositories under the working organization.'''
+        all_repositories = self.organization.repositories
+
+        if reload:
+            all_repos = []
+            page = 1
+
+            while True:
+                repos = RepositoryListAPI.run(self.organization_id, page)
+
+                if len(repos) > 0:
+                    all_repos.extend(repos)
+                    page += 1
+                else:
+                    break
+            
+            if len(all_repos) > 0:
+                self.organization.repositories = all_repos
+                all_repositories = all_repos
+                self.save_organization()
+
+        return all_repositories
 
 
 # BEGIN - Functions

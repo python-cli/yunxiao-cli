@@ -6,6 +6,7 @@ from alibabacloud_tea_openapi.client import Client as OpenApiClient
 from alibabacloud_tea_openapi import models as open_api_models
 from alibabacloud_tea_util import models as util_models
 from alibabacloud_openapi_util.client import Client as OpenApiUtilClient
+from alibabacloud_credentials.client import Client as CredentialClient
 
 from ..utils.config import get_credential, get_endpoint
 

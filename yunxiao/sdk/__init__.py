@@ -12,3 +12,9 @@ from .user_info import fetch_user_id
 
 from .condition import Condition, ConditionGroup
 from .category import Category
+
+from .repository_list import API as RepositoryListAPI
+from .branch_list import API as BranchListAPI
+from .merge_request_list import API as MergeRequestListAPI
+from .merge_request_detail import API as MergeRequestDetailAPI
+from .merge_request_create import API as MergeRequestCreateAPI

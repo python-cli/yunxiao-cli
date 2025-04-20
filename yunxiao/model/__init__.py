@@ -6,3 +6,7 @@ from .workitem import *
 from .workitemfield import *
 from .workitemtype import *
 from .status import *
+
+from .repository import *
+from .branch import *
+from .merge_request import *
