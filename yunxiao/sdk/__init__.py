@@ -14,7 +14,8 @@ from .condition import Condition, ConditionGroup
 from .category import Category
 
 from .repository_list import API as RepositoryListAPI
-from .branch_list import API as BranchListAPI
+from .repository_branch_list import API as RepositoryBranchListAPI
+from .repository_member_list import API as RepositoryMemberListAPI
 from .merge_request_list import API as MergeRequestListAPI
 from .merge_request_detail import API as MergeRequestDetailAPI
 from .merge_request_create import API as MergeRequestCreateAPI

@@ -1,4 +1,4 @@
-from .base import *
+from ..base import *
 
 class MergeRequest(ModelBase):
     '''
@@ -51,6 +51,9 @@ class MergeRequest(ModelBase):
     }
     '''
 
+    @property
+    def repo_name(self):
+        return self.nameWithNamespace.split('/')[-1].strip()
 
 class MergeRequestDetail(ModelBase):
     '''

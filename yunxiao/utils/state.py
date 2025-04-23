@@ -239,6 +239,17 @@ class GlobalState:
 
         return all_repositories
 
+    def get_repository_by_name(self, name: str) -> Repository:
+        '''
+        Retrieve a repository by its name from the list of all repositories.
+        '''
+        repo = next(filter(lambda x: x.name == name, self.get_all_repositories()), None)
+
+        if not repo:
+            raise click.ClickException(f'Repository not found: {name}')
+
+        return repo
+
 
 # BEGIN - Functions
 

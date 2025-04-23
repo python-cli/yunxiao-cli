@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join, exists
 from typing import Tuple, List, Dict, Optional, Any, Union
 import yaml
 from yaml import Dumper, Loader
@@ -30,7 +30,13 @@ def _setup_yaml_handlers():
 _setup_yaml_handlers()
 
 def _get_config_file() -> str:
-    return join(get_config_root(), 'cache.yaml')
+    filepath = join(get_config_root(), 'cache.yaml')
+
+    if not exists(filepath):
+        with open(filepath, 'w') as f:
+            f.write('')
+
+    return filepath
 
 def _save_to_cache(data: ModelBase) -> None:
     """Save a ModelBase object hierarchy to YAML."""

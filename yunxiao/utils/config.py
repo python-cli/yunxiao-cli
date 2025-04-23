@@ -46,7 +46,10 @@ def _load_config() -> dict:
                   name: 
       
         COMMAND:
-            - # /path/to/code.py
+            # - /path/to/code.py
+                         
+        REVIEWER:
+            # - hanwei
         ''')
 
         with open(config_file, 'w') as file:
@@ -91,3 +94,6 @@ def get_user_commands() -> List[CommandBase.__subclasses__]:
         if cmd_cls:
             result.append(cmd_cls)
     return result
+
+def get_default_reviewers() -> List[str]:
+    return _load_config().get('REVIEWER', [])

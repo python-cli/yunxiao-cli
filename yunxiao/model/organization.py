@@ -14,7 +14,6 @@ class Organization(ModelBase):
     def __init__(self, **kwargs: Any) -> None:
         projects: List[Project] = kwargs.pop("projects", [])
         repositories: List[Repository] = kwargs.pop("repositories", [])
-        breakpoint()
         super().__init__(**kwargs)
         self._projects: List[Project] = []
         self.projects = projects  # Use the setter to ensure binding

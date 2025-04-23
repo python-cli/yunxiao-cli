@@ -12,6 +12,8 @@ click = "*"
 selenium = "*"
 webdriver-manager = "*"
 rich = "*"
+pypinyin = "*"
+questionary = "*"
 
 [dev-packages]
 

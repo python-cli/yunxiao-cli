@@ -1,4 +1,4 @@
-from .base import *
+from ..base import *
 from .workitemfield import WorkItemField
 
 class WorkItemType(ModelBase):

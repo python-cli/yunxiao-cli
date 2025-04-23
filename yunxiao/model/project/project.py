@@ -1,4 +1,4 @@
-from .base import *
+from ..base import *
 from .member import Member
 from .status import Status
 from .workitemtype import WorkItemType

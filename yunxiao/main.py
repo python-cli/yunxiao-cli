@@ -1,4 +1,6 @@
 import click
+import questionary as Q
+from functools import reduce
 
 from .sdk import *
 from .utils.output import *
@@ -6,6 +8,7 @@ from .utils.cache import *
 from .utils.date import *
 from .utils.command import *
 from .utils.state import *
+from .utils.pinyin import *
 from .web import *
 
 @click.group()
@@ -168,14 +171,18 @@ def repository_list(path, reload):
 def repository_branch_list(repo_name):
     """List repository branches."""
 
-    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
-
-    if not repo:
-        click.echo(f'Repository not found: {repo_name}')
-        return
-
-    branches = BranchListAPI.run(GlobalState.current().organization_id, repo.Id)
+    repo = GlobalState.current().get_repository_by_name(repo_name)
+    branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
     show_table_branch(branches)
+
+@repository.command(name='member')
+@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
+def repository_member_list(repo_name):
+    """List repository members."""
+
+    repo = GlobalState.current().get_repository_by_name(repo_name)
+    members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
+    show_table_repository_member(members)
 
 @cli.group(name='pr')
 def merge_request():
@@ -183,17 +190,13 @@ def merge_request():
     pass
 
 @merge_request.command(name='list')
-@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
-def merge_request_list(repo_name):
+@click.option('--repo-name', '-n', type=click.STRING, help='Repo name')
+@click.option('--count', '-c', type=click.INT, default=5, required=True, help='Result count')
+def merge_request_list(repo_name, count):
     """List merge requests."""
 
-    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
-
-    if not repo:
-        click.echo(f'Repository not found: {repo_name}')
-        return
-
-    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo.Id, GlobalState.current().user_id)
+    repo_id = GlobalState.current().get_repository_by_name(repo_name) if repo_name else None
+    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo_id, GlobalState.current().user_id, count)
     show_table_merge_request(requests)
 
 @merge_request.command(name='info')
@@ -202,36 +205,115 @@ def merge_request_list(repo_name):
 def merge_request_list(repo_name, id):
     """Show the details of merge request."""
 
-    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
-
-    if not repo:
-        click.echo(f'Repository not found: {repo_name}')
-        return
-
+    repo = GlobalState.current().get_repository_by_name(repo_name)
     request = MergeRequestDetailAPI.run(GlobalState.current().organization_id, repo.Id, id)
     show_panel_merge_request(request)
 
 @merge_request.command(name='create')
-@click.option('--repo-name', '-n', type=click.STRING, required=True, help='Repo name')
-@click.option('--source-branch', type=click.STRING, required=True, help='Source branch')
-@click.option('--target-branch', type=click.STRING, required=True, help='Target branch')
-@click.option('--title', type=click.STRING, required=True, help='Title')
-def merge_request_create(repo_name, source_branch, target_branch, title):
+@click.option('--repo-name', '-n', type=click.STRING, help='Repo name')
+@click.option('--branch', '-b', type=click.STRING, help='<source-branch>:<target-branch>')
+@click.option('--title', '-t', type=click.STRING, help='Title')
+@click.option('--reviewers', '-r', type=click.STRING, help='Reviewers\' name (ASCII), use comma as separator')
+@click.option('--interactive', '-i', is_flag=True, default=False, help='Enter interactive mode instead.')
+def merge_request_create(repo_name, branch, title, reviewers, interactive):
     """Create merge request."""
 
-    repo = next(filter(lambda x: x.name == repo_name, GlobalState.current().get_all_repositories()), None)
+    if interactive:
+        all_repo_names = list(map(lambda x: x.name, GlobalState.current().get_all_repositories()))
+        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names).ask()
+        repo = GlobalState.current().get_repository_by_name(selected_repo_name)
+        branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
+        source_branch_name = Q.autocomplete('Source branch', choices=list(map(lambda x: x.name, branches))).ask()
+        target_branch_name = Q.autocomplete('Target branch', choices=list(map(lambda x: x.name, branches))).ask()
+        source_branch = next(filter(lambda x: x.name == source_branch_name, branches), None)
+        title = Q.text("Title", default=source_branch.commit.get('title'), validate=lambda text: len(text.strip()) > 0 or "Title cannot be empty").ask()
 
-    if not repo:
-        click.echo(f'Repository not found: {repo_name}')
-        return
+        members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
+        members_pinyin = list(map(lambda x: x.name_pinyin, members))
+        members_meta = reduce(lambda d, s: {**d, s.name_pinyin: s.name}, members, {})
+        selected_members: set[Member] = []
+        selected_members.extend(list(filter(lambda x: x.name_pinyin in get_default_reviewers(), members)))
 
-    result = MergeRequestCreateAPI.run(GlobalState.current().organization_id, repo.Id, source_branch, target_branch, title)
-    print(result)
+        while True:
+            name = Q.autocomplete('Add reviewer', choices=members_pinyin, meta_information=members_meta).ask()
+
+            if len(name) <= 0:
+                break
+
+            member = next(filter(lambda x: x.name_pinyin == name, members), None)
+
+            if member is None:
+                click.echo(f'Not a valid member: {name}')
+                continue
+
+            selected_members.append(member)
+
+        show_content('All reviewers: ', ', '.join(list(map(lambda x: x.name, selected_members))))
+        selected_member_ids = list(map(lambda x: str(x.id), selected_members))
+    else:
+        repo = GlobalState.current().get_repository_by_name(repo_name)
+        branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
+
+        source_branch_name, target_branch_name = branch.split(':')
+        source_branch = next(filter(lambda x: x.name == source_branch_name, branches), None)
+        target_branch = next(filter(lambda x: x.name == target_branch_name, branches), None)
+
+        if source_branch is None:
+            raise click.ClickException(f'Branch "{source_branch_name}" not found')
+        if target_branch is None:
+            raise click.ClickException(f'Branch "{target_branch_name}" not found')
+
+        title = source_branch.commit.get('title')
+
+        if title is None:
+            raise click.ClickException(f'Title can not be empty')
+
+        members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
+        selected_members = list(filter(lambda x: x.name_pinyin in reviewers.split(','), members))
+
+        show_content('Repository:  ', repo.name)
+        show_content('Branch:      ', f'{source_branch_name} -> {target_branch_name}')
+        show_content('Title:       ', title)
+        show_content('Reviewers:   ', ', '.join(map(lambda x: x.name, selected_members)))
+
+    if not Q.confirm('Confirm?').ask():
+        raise click.Abort()
+
+    merge_request = MergeRequestCreateAPI.run(GlobalState.current().organization_id, repo.Id, source_branch_name, target_branch_name, title, selected_member_ids)
+    
+    if merge_request is None:
+        raise click.ClickException(f'Create merge request failed, info: {merge_request}')
+
+    click.echo(f'Created merge request {merge_request.localId} successfully!')
+    click.echo(f'Link: {merge_request.detailUrl}')
 
 @cli.command(name='test', hidden=True)
 def test_entry():
     """Test"""
     pass
+    # name = click.prompt('Enter your name')
+    # click.echo(f'{name}')
+
+    print(get_default_reviewers())
+
+    name = Q.text("What's your name?", validate=lambda text: len(text.strip()) > 0 or "Name cannot be empty").ask()
+    color = Q.select(
+        "Choose color:",
+        choices=["red", "green", "blue"]
+    ).ask()
+    confirmed = Q.confirm("Are you sure?").ask()
+
+    print(f"{name} chose {color} (confirmed: {confirmed})")
+    return
+
+    repo_name = 'TongTong'
+    repo = GlobalState.current().get_repository_by_name(repo_name)
+    members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
+    
+    for member in members:
+        print(member)
+        print(member.name_pinyin)
+        break
 
 @cli.group(invoke_without_command=True)
 @click.pass_context

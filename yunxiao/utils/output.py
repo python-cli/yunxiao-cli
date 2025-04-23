@@ -4,8 +4,9 @@ from rich.text import Text
 from rich.style import Style
 
 from typing import Iterable, Optional, List, Union, Dict, Sequence, Any
+from datetime import datetime
 
-from ..model import Organization, Project, Status, Member, WorkItem, Repository, Branch, MergeRequest
+from ..model import Organization, Project, Status, Member, WorkItem, Repository, Branch, RepositoryMember, MergeRequest
 
 def _show_table(table_data: Iterable[Any], headers: Optional[List[str]], title: Optional[str] = None):
     console = Console()
@@ -43,6 +44,10 @@ def _print_property(title, content):
         text.append(content, style="bold italic")
 
     console.print(text)
+
+def format_date_string(value):
+    date_obj = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z")
+    return date_obj.strftime("%Y-%m-%d %H:%M")
 
 def show_table_generic(items: Iterable[Iterable[Any]], headers=List[str]):
     '''
@@ -141,7 +146,7 @@ def show_table_repository(items: Iterable[Repository]):
         components = path.split('/')
         return '/'.join(components[1:])
 
-    table = list(map(lambda x: [_add_link(x.path, x.webUrl), format_repo_path(x.pathWithNamespace), x.updatedAt], items))
+    table = list(map(lambda x: [_add_link(x.path, x.webUrl), format_repo_path(x.pathWithNamespace), format_date_string(x.updatedAt)], items))
     headers = ['Name', 'Path', 'Update At']
     _show_table(table, headers=headers)
 
@@ -150,8 +155,17 @@ def show_table_branch(items: Iterable[Branch]):
     Print branches with Rich table.
     '''
 
-    table = list(map(lambda x: [x.name, x.commit.get('shortId'), x.commit.get('authorName'), x.commit.get('title'),x.commit.get('committedDate')], items))
+    table = list(map(lambda x: [x.name, x.commit.get('shortId'), x.commit.get('authorName'), x.commit.get('title'), format_date_string(x.commit.get('committedDate'))], items))
     headers = ['Name', 'Last Commit ID', 'Last Commit User', 'Last Commit Message', 'Last Commit Date']
+    _show_table(table, headers=headers)
+
+def show_table_repository_member(items: Iterable[RepositoryMember]):
+    '''
+    Print repository members with Rich table.
+    '''
+
+    table = list(map(lambda x: [x.id, x.name, x.email], items))
+    headers = ['ID', 'Name', 'Email']
     _show_table(table, headers=headers)
 
 def show_table_merge_request(items: Iterable[MergeRequest]):
@@ -160,10 +174,10 @@ def show_table_merge_request(items: Iterable[MergeRequest]):
     '''
 
     def format_branch(mr):
-        return _add_link(f'{mr.sourceBranch} -> {mr.targetBranch}', mr.webUrl) 
+        return _add_link(f'{mr.sourceBranch} -> {mr.targetBranch}', mr.detailUrl)
 
-    table = list(map(lambda x: [x.localId, format_branch(x), x.title, x.updatedAt, x.author.get('name'), x.newVersionState], items))
-    headers = ['ID', 'Branch', 'Title', 'Updated At', 'Author', 'Status']
+    table = list(map(lambda x: [x.localId, x.repo_name, format_branch(x), x.title, format_date_string(x.updatedAt), x.author.get('name'), x.newVersionState], items))
+    headers = ['ID', 'Repo', 'Branch', 'Title', 'Updated At', 'Author', 'Status']
     _show_table(table, headers=headers)
 
 def show_panel_merge_request(item: MergeRequest):
@@ -178,5 +192,5 @@ def show_panel_merge_request(item: MergeRequest):
     _print_property('Target branch', item.targetBranch)
     _print_property('Author', item.author.get('name'))
     _print_property('Status', item.status)
-    _print_property('Create At', item.createTime)
-    _print_property('Update At', item.updateTime)
+    _print_property('Create At', format_date_string(item.createTime))
+    _print_property('Update At', format_date_string(item.updateTime))
