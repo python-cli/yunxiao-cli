@@ -4,6 +4,8 @@ from typing import Tuple, List, Dict, Optional, Any, Union
 import yaml
 from textwrap import dedent
 
+from questionary import Style
+
 from ..model import Project
 from .command import CommandCenter, CommandBase
 
@@ -47,9 +49,19 @@ def _load_config() -> dict:
       
         COMMAND:
             # - /path/to/code.py
-                         
-        REVIEWER:
-            # - hanwei
+
+        MERGE-REQUEST:
+            REVIEWER:
+                - # hanwei
+
+            TARGET_BRANCH: main
+
+        QUESTIONARY:
+            STYLE:
+                # question: "fg:#FF5733 bold"         # Orange-red & bold questions
+                # answer: "fg:#2E86C1"                # Blue answers
+                # pointer: "fg:#F4D03F bold"          # Yellow & bold pointer
+                # selected: "fg:#FFFFFF bg:#FF0000"
         ''')
 
         with open(config_file, 'w') as file:
@@ -95,5 +107,17 @@ def get_user_commands() -> List[CommandBase.__subclasses__]:
             result.append(cmd_cls)
     return result
 
-def get_default_reviewers() -> List[str]:
-    return _load_config().get('REVIEWER', [])
+def get_default_merge_request_reviewers() -> List[str]:
+    names = _load_config().get('MERGE-REQUEST', {}).get('REVIEWER', [])
+    return list(filter(lambda x: len(x) > 0, names))
+
+def get_default_merge_request_target_branch() -> Optional[str]:
+    return _load_config().get('MERGE-REQUEST', {}).get('TARGET_BRANCH')
+
+def get_default_questionary_style() -> Style:
+    styles = _load_config().get('QUESTIONARY', {}).get('STYLE')
+
+    if styles is None:
+        return None
+
+    return Style(list(map(lambda x: (x[0], x[1]), styles.items())))

@@ -16,6 +16,11 @@ class RepositoryMember(ModelBase):
     }
     '''
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RepositoryMember):
+            return False
+        return self.id == other.id
+
     @property
     def name_pinyin(self):
         return get_pinyin(self.name)

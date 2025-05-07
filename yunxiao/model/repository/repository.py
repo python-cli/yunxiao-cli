@@ -21,3 +21,8 @@ class Repository(ModelBase):
       "updatedAt": "2025-04-17T22:47:38+08:00"
     }
     '''
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Repository):
+            return False
+        return self.Id == other.Id

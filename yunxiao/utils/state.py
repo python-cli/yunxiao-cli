@@ -6,7 +6,7 @@ from ..sdk import *
 from .config import *
 from .cache import *
 from ..web import *
-from ..model.repository import Repository
+from ..model.repository import Repository, RepositoryMember
 
 @dataclass
 class GlobalState:
@@ -250,6 +250,27 @@ class GlobalState:
 
         return repo
 
+    def get_merge_request_reviewer_ids(self, members: List[RepositoryMember]) -> List[str]:
+        '''
+        The merge request request needs the fucking stupid aliyun account id, so let's resolve them by user names.
+        '''
+
+        aliyun_ids = []
+
+        for member in members:
+            user_id = None
+
+            for project in self.organization.projects:
+                for m in project.members:
+                    if m.nickName == member.name or m.realName == member.name:
+                        user_id = m.identifier
+
+            if user_id:
+                aliyun_ids.append(user_id)
+            else:
+                click.echo(f'Didn\'t find a member named: {member.name}')
+
+        return aliyun_ids
 
 # BEGIN - Functions
 

@@ -220,36 +220,65 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
 
     if interactive:
         all_repo_names = list(map(lambda x: x.name, GlobalState.current().get_all_repositories()))
-        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names).ask()
+
+        def validate_repo(value):
+            return len(list(filter(lambda x: x == value, all_repo_names))) > 0
+
+        def validate_branch(value):
+            return len(list(filter(lambda x: x.name == value, branches))) > 0
+
+        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names, validate=validate_repo, style=get_default_questionary_style()).ask()
         repo = GlobalState.current().get_repository_by_name(selected_repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
-        source_branch_name = Q.autocomplete('Source branch', choices=list(map(lambda x: x.name, branches))).ask()
-        target_branch_name = Q.autocomplete('Target branch', choices=list(map(lambda x: x.name, branches))).ask()
+
+        default_target_branch_name = get_default_merge_request_target_branch()
+
+        if default_target_branch_name:
+            if not next(filter(lambda x: x.name == default_target_branch_name, branches), None):
+                default_target_branch_name = None
+
+        source_branch_name = Q.autocomplete('Source branch', 
+                                            choices=list(map(lambda x: x.name, branches)), 
+                                            validate=validate_branch, 
+                                            style=get_default_questionary_style()).ask()
+        target_branch_name = Q.autocomplete('Target branch', 
+                                            choices=list(map(lambda x: x.name, branches)), 
+                                            validate=validate_branch, 
+                                            style=get_default_questionary_style(), 
+                                            default=default_target_branch_name or '').ask()
+
         source_branch = next(filter(lambda x: x.name == source_branch_name, branches), None)
-        title = Q.text("Title", default=source_branch.commit.get('title'), validate=lambda text: len(text.strip()) > 0 or "Title cannot be empty").ask()
+        title = Q.text("Title", default=source_branch.commit.get('title'), 
+                       validate=lambda text: len(text.strip()) > 0 or "Title cannot be empty", 
+                       style=get_default_questionary_style()).ask()
 
         members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
         members_pinyin = list(map(lambda x: x.name_pinyin, members))
         members_meta = reduce(lambda d, s: {**d, s.name_pinyin: s.name}, members, {})
-        selected_members: set[Member] = []
-        selected_members.extend(list(filter(lambda x: x.name_pinyin in get_default_reviewers(), members)))
+        selected_members: List[Member] = []
+        selected_members.extend(list(filter(lambda x: x.name_pinyin in get_default_merge_request_reviewers(), members)))
+
+        def validate_member(value):
+            if len(value) <= 0: return True
+            return len(list(filter(lambda x: x == value, members_pinyin))) > 0
 
         while True:
-            name = Q.autocomplete('Add reviewer', choices=members_pinyin, meta_information=members_meta).ask()
+            name = Q.autocomplete('Add reviewer', choices=members_pinyin, 
+                                  meta_information=members_meta, validate=validate_member, 
+                                  style=get_default_questionary_style()).ask()
 
-            if len(name) <= 0:
+            if name is None or len(name) <= 0:
                 break
 
             member = next(filter(lambda x: x.name_pinyin == name, members), None)
-
-            if member is None:
-                click.echo(f'Not a valid member: {name}')
-                continue
-
-            selected_members.append(member)
+            if member and member not in selected_members:
+                selected_members.append(member)
 
         show_content('All reviewers: ', ', '.join(list(map(lambda x: x.name, selected_members))))
-        selected_member_ids = list(map(lambda x: str(x.id), selected_members))
+        selected_member_ids = GlobalState.current().get_merge_request_reviewer_ids(selected_members)
+
+        if not Q.confirm('Confirm?', style=get_default_questionary_style()).ask():
+            raise click.Abort()
     else:
         repo = GlobalState.current().get_repository_by_name(repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
@@ -270,14 +299,13 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
 
         members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
         selected_members = list(filter(lambda x: x.name_pinyin in reviewers.split(','), members))
+        selected_members.extend(list(filter(lambda x: x.name_pinyin in get_default_merge_request_reviewers(), members)))
+        selected_member_ids = GlobalState.current().get_merge_request_reviewer_ids(selected_members)
 
         show_content('Repository:  ', repo.name)
         show_content('Branch:      ', f'{source_branch_name} -> {target_branch_name}')
         show_content('Title:       ', title)
         show_content('Reviewers:   ', ', '.join(map(lambda x: x.name, selected_members)))
-
-    if not Q.confirm('Confirm?').ask():
-        raise click.Abort()
 
     merge_request = MergeRequestCreateAPI.run(GlobalState.current().organization_id, repo.Id, source_branch_name, target_branch_name, title, selected_member_ids)
     
@@ -291,29 +319,18 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
 def test_entry():
     """Test"""
     pass
-    # name = click.prompt('Enter your name')
-    # click.echo(f'{name}')
+    repo = GlobalState.current().get_repository_by_name('TongTong')
+    branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
 
-    print(get_default_reviewers())
-
-    name = Q.text("What's your name?", validate=lambda text: len(text.strip()) > 0 or "Name cannot be empty").ask()
+    name = Q.text("What's your name?", validate=lambda text: len(text.strip()) > 0 or "Name cannot be empty", style=get_default_questionary_style()).ask()
     color = Q.select(
         "Choose color:",
-        choices=["red", "green", "blue"]
+        choices=["red", "green", "blue"], style=get_default_questionary_style()
     ).ask()
-    confirmed = Q.confirm("Are you sure?").ask()
+    confirmed = Q.confirm("Are you sure?", style=get_default_questionary_style()).ask()
 
     print(f"{name} chose {color} (confirmed: {confirmed})")
     return
-
-    repo_name = 'TongTong'
-    repo = GlobalState.current().get_repository_by_name(repo_name)
-    members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
-    
-    for member in members:
-        print(member)
-        print(member.name_pinyin)
-        break
 
 @cli.group(invoke_without_command=True)
 @click.pass_context
@@ -352,4 +369,5 @@ def inject_do_commands():
 inject_do_commands()
 
 if __name__ == '__main__':
+    get_default_questionary_style()
     cli()
