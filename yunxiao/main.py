@@ -9,6 +9,7 @@ from .utils.date import *
 from .utils.command import *
 from .utils.state import *
 from .utils.pinyin import *
+from .utils.file import *
 from .web import *
 
 @click.group()
@@ -220,6 +221,7 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
 
     if interactive:
         all_repo_names = list(map(lambda x: x.name, GlobalState.current().get_all_repositories()))
+        current_repo = get_current_working_git_repo()
 
         def validate_repo(value):
             return len(list(filter(lambda x: x == value, all_repo_names))) > 0
@@ -227,7 +229,14 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         def validate_branch(value):
             return len(list(filter(lambda x: x.name == value, branches))) > 0
 
-        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names, validate=validate_repo, style=get_default_questionary_style()).ask()
+        if current_repo:
+            current_repo_name = os.path.basename(current_repo)
+            if current_repo_name not in all_repo_names:
+                current_repo_name = None
+        else:
+            current_repo_name = None
+
+        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names, validate=validate_repo, default=current_repo_name, style=get_default_questionary_style()).ask()
         repo = GlobalState.current().get_repository_by_name(selected_repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
 
