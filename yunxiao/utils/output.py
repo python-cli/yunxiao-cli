@@ -49,6 +49,10 @@ def format_date_string(value):
     date_obj = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z")
     return date_obj.strftime("%Y-%m-%d %H:%M")
 
+def format_timestamp(value):
+    from datetime import datetime, timezone
+    return datetime.fromtimestamp(value / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+
 def show_table_generic(items: Iterable[Iterable[Any]], headers=List[str]):
     '''
     Print generic iterable items with Rich table.
@@ -104,10 +108,6 @@ def show_panel_workitem(item: WorkItem):
     Print work item with panel.
     '''
     from ..main import GlobalState
-
-    def format_timestamp(value):
-        from datetime import datetime, timezone
-        return datetime.fromtimestamp(value / 1000, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
     _print_property('ID', _add_link(item.serialNumber, item.web_url))
     _print_property('Subject', item.subject)
