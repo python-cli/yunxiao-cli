@@ -192,12 +192,21 @@ def merge_request():
 
 @merge_request.command(name='list')
 @click.option('--repo-name', '-n', type=click.STRING, help='Repo name')
+@click.option('--author', '-u', type=click.STRING, default='me', help='Available values: all, me, <user id>, <user name>')
 @click.option('--count', '-c', type=click.INT, default=5, required=True, help='Result count')
-def merge_request_list(repo_name, count):
+def merge_request_list(repo_name, author, count):
     """List merge requests."""
 
-    repo_id = GlobalState.current().get_repository_by_name(repo_name) if repo_name else None
-    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo_id, GlobalState.current().user_id, count)
+    repo = GlobalState.current().get_repository_by_name(repo_name) if repo_name else None
+
+    if author == 'me':
+        user_id = GlobalState.current().user_id
+    elif author == 'all':
+        user_id = None
+    else:
+        user_id = next(map(lambda x: x.identifier, GlobalState.current().get_matching_members(author)))
+
+    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo.Id, user_id, count)
     show_table_merge_request(requests)
 
 @merge_request.command(name='info')
