@@ -230,7 +230,6 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
 
     if interactive:
         all_repo_names = list(map(lambda x: x.name, GlobalState.current().get_all_repositories()))
-        current_repo = get_current_working_git_repo()
 
         def validate_repo(value):
             return len(list(filter(lambda x: x == value, all_repo_names))) > 0
@@ -238,18 +237,27 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         def validate_branch(value):
             return len(list(filter(lambda x: x.name == value, branches))) > 0
 
-        if current_repo:
-            current_repo_name = os.path.basename(current_repo)
-            if current_repo_name not in all_repo_names:
-                current_repo_name = None
+        if repo_name and len(repo_name) > 0:
+            current_repo_name = repo_name
         else:
+            current_repo = get_current_working_git_repo()
+            current_repo_name = os.path.basename(current_repo)
+
+        if current_repo_name not in all_repo_names:
             current_repo_name = None
 
-        selected_repo_name = Q.autocomplete('Repository', choices=all_repo_names, validate=validate_repo, default=current_repo_name, style=get_default_questionary_style()).ask()
+        selected_repo_name = Q.autocomplete('Repository', 
+                                            choices=all_repo_names, 
+                                            validate=validate_repo, 
+                                            default=current_repo_name or '', 
+                                            style=get_default_questionary_style()).ask()
         repo = GlobalState.current().get_repository_by_name(selected_repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
 
-        default_target_branch_name = get_default_merge_request_target_branch()
+        default_source_branch_name, default_target_branch_name = branch.split(':')
+
+        if default_target_branch_name is None:
+            default_target_branch_name = get_default_merge_request_target_branch()
 
         if default_target_branch_name:
             if not next(filter(lambda x: x.name == default_target_branch_name, branches), None):
@@ -258,7 +266,8 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         source_branch_name = Q.autocomplete('Source branch', 
                                             choices=list(map(lambda x: x.name, branches)), 
                                             validate=validate_branch, 
-                                            style=get_default_questionary_style()).ask()
+                                            style=get_default_questionary_style(), 
+                                            default=default_source_branch_name or '').ask()
         target_branch_name = Q.autocomplete('Target branch', 
                                             choices=list(map(lambda x: x.name, branches)), 
                                             validate=validate_branch, 
