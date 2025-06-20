@@ -254,7 +254,7 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         repo = GlobalState.current().get_repository_by_name(selected_repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
 
-        default_source_branch_name, default_target_branch_name = branch.split(':')
+        default_source_branch_name, default_target_branch_name = (branch.split(':') + [None, None])[:2] if branch else (None, None)
 
         if default_target_branch_name is None:
             default_target_branch_name = get_default_merge_request_target_branch()
