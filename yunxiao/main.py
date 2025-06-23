@@ -81,7 +81,7 @@ def project_status(project, category):
     """List the project's statuses"""
     if project:
         all_projects = [ProjectDetailAPI.run(GlobalState.current().organization_id, project)]
-    else: 
+    else:
         all_projects = GlobalState.current().get_all_projects()
 
     for project in all_projects:
@@ -246,10 +246,10 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         if current_repo_name not in all_repo_names:
             current_repo_name = None
 
-        selected_repo_name = Q.autocomplete('Repository', 
-                                            choices=all_repo_names, 
-                                            validate=validate_repo, 
-                                            default=current_repo_name or '', 
+        selected_repo_name = Q.autocomplete('Repository',
+                                            choices=all_repo_names,
+                                            validate=validate_repo,
+                                            default=current_repo_name or '',
                                             style=get_default_questionary_style()).ask()
         repo = GlobalState.current().get_repository_by_name(selected_repo_name)
         branches = RepositoryBranchListAPI.run(GlobalState.current().organization_id, repo.Id)
@@ -263,20 +263,20 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
             if not next(filter(lambda x: x.name == default_target_branch_name, branches), None):
                 default_target_branch_name = None
 
-        source_branch_name = Q.autocomplete('Source branch', 
-                                            choices=list(map(lambda x: x.name, branches)), 
-                                            validate=validate_branch, 
-                                            style=get_default_questionary_style(), 
+        source_branch_name = Q.autocomplete('Source branch',
+                                            choices=list(map(lambda x: x.name, branches)),
+                                            validate=validate_branch,
+                                            style=get_default_questionary_style(),
                                             default=default_source_branch_name or '').ask()
-        target_branch_name = Q.autocomplete('Target branch', 
-                                            choices=list(map(lambda x: x.name, branches)), 
-                                            validate=validate_branch, 
-                                            style=get_default_questionary_style(), 
+        target_branch_name = Q.autocomplete('Target branch',
+                                            choices=list(map(lambda x: x.name, branches)),
+                                            validate=validate_branch,
+                                            style=get_default_questionary_style(),
                                             default=default_target_branch_name or '').ask()
 
         source_branch = next(filter(lambda x: x.name == source_branch_name, branches), None)
-        title = Q.text("Title", default=source_branch.commit.get('title'), 
-                       validate=lambda text: len(text.strip()) > 0 or "Title cannot be empty", 
+        title = Q.text("Title", default=source_branch.commit.get('title'),
+                       validate=lambda text: len(text.strip()) > 0 or "Title cannot be empty",
                        style=get_default_questionary_style()).ask()
 
         members = RepositoryMemberListAPI.run(GlobalState.current().organization_id, repo.Id)
@@ -290,8 +290,8 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
             return len(list(filter(lambda x: x == value, members_pinyin))) > 0
 
         while True:
-            name = Q.autocomplete('Add reviewer', choices=members_pinyin, 
-                                  meta_information=members_meta, validate=validate_member, 
+            name = Q.autocomplete('Add reviewer', choices=members_pinyin,
+                                  meta_information=members_meta, validate=validate_member,
                                   style=get_default_questionary_style()).ask()
 
             if name is None or len(name) <= 0:
@@ -335,7 +335,7 @@ def merge_request_create(repo_name, branch, title, reviewers, interactive):
         show_content('Reviewers:   ', ', '.join(map(lambda x: x.name, selected_members)))
 
     merge_request = MergeRequestCreateAPI.run(GlobalState.current().organization_id, repo.Id, source_branch_name, target_branch_name, title, selected_member_ids)
-    
+
     if merge_request is None:
         raise click.ClickException(f'Create merge request failed, info: {merge_request}')
 
