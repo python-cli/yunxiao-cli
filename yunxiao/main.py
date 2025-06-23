@@ -197,7 +197,7 @@ def merge_request():
 def merge_request_list(repo_name, author, count):
     """List merge requests."""
 
-    repo = GlobalState.current().get_repository_by_name(repo_name) if repo_name else None
+    repo_id = GlobalState.current().get_repository_by_name(repo_name).Id if repo_name else None
 
     if author == 'me':
         user_id = GlobalState.current().user_id
@@ -206,7 +206,7 @@ def merge_request_list(repo_name, author, count):
     else:
         user_id = next(map(lambda x: x.identifier, GlobalState.current().get_matching_members(author)))
 
-    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo.Id, user_id, count)
+    requests = MergeRequestListAPI.run(GlobalState.current().organization_id, repo_id, user_id, count)
     show_table_merge_request(requests)
 
 @merge_request.command(name='info')
