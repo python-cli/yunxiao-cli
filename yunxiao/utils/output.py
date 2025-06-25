@@ -11,16 +11,16 @@ from ..model import Organization, Project, Status, Member, WorkItem, Repository,
 def _show_table(table_data: Iterable[Any], headers: Optional[List[str]], title: Optional[str] = None):
     console = Console()
     table = Table(title=title)
-    
+
     # Add headers
     if headers:
         for header in headers:
             table.add_column(header)
-    
+
     # Add rows
     for row in table_data:
         table.add_row(*[cell if isinstance(cell, Text) else str(cell) for cell in row])
-    
+
     console.print(table)
 
 def _add_link(text, url):
@@ -176,8 +176,8 @@ def show_table_merge_request(items: Iterable[MergeRequest]):
     def format_branch(mr):
         return _add_link(f'{mr.sourceBranch} -> {mr.targetBranch}', mr.detailUrl)
 
-    table = list(map(lambda x: [x.localId, x.repo_name, format_branch(x), x.title, format_date_string(x.updatedAt), x.author.get('name'), x.newVersionState], items))
-    headers = ['ID', 'Repo', 'Branch', 'Title', 'Updated At', 'Author', 'Status']
+    table = list(map(lambda x: [x.localId, x.repo_name, format_branch(x), x.title, format_date_string(x.updatedAt), x.author.get('name'), x.merged_by_user, x.newVersionState], items))
+    headers = ['ID', 'Repo', 'Branch', 'Title', 'Updated At', 'Author', 'Merged By', 'Status']
     _show_table(table, headers=headers)
 
 def show_panel_merge_request(item: MergeRequest):
@@ -191,6 +191,8 @@ def show_panel_merge_request(item: MergeRequest):
     _print_property('Source branch', item.sourceBranch)
     _print_property('Target branch', item.targetBranch)
     _print_property('Author', item.author.get('name'))
+    _print_property('Reviewers', ', '.join(item.reviewer_names))
+    _print_property('Merged by', item.merged_by_user)
     _print_property('Status', item.status)
     _print_property('Create At', format_date_string(item.createTime))
     _print_property('Update At', format_date_string(item.updateTime))
